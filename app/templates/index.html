@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Amazon SKU Label Printer</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div class="brand-mark">A</div>
+      <div>
+        <h1>Amazon SKU Label Printer</h1>
+        <p>Upload Amazon labels + SKU CSV → Match products → Position SKU live → Download ready-to-print PDF</p>
+      </div>
+    </header>
+
+    <section class="card upload-card" id="uploadCard">
+      <div id="dropzone" class="dropzone" tabindex="0">
+        <div class="upload-icon">📄</div>
+        <h2>Drag &amp; Drop Amazon PDF Here</h2>
+        <p>or</p>
+        <label class="button primary" for="pdfInput">Choose PDF</label>
+        <input id="pdfInput" type="file" accept="application/pdf,.pdf" hidden>
+        <small>Supported format: PDF · Maximum 25 MB</small>
+      </div>
+      <div id="fileInfo" class="file-info hidden"></div>
+      <div class="csv-row">
+        <div class="csv-help"><strong>Optional: Upload SKU Mapping CSV</strong><span>Columns: <code>product_name</code>, <code>sku</code></span></div>
+        <label class="button secondary" for="csvInput">Choose CSV</label>
+        <input id="csvInput" type="file" accept=".csv,text/csv" hidden>
+        <a class="template-link" href="/template-csv">Download CSV Template</a>
+      </div>
+      <div id="csvInfo" class="file-info hidden"></div>
+      <button id="processBtn" class="button primary full hidden">Process PDF &amp; Match SKUs</button>
+    </section>
+
+    <section id="results" class="hidden">
+      <div class="stats card">
+        <div><strong id="labelsCount">0</strong><span>Shipping Labels</span></div>
+        <div><strong id="detectedCount">0</strong><span>SKUs Matched</span></div>
+        <div><strong id="missingCount">0</strong><span>Manual Input Needed</span></div>
+      </div>
+
+      <section class="card position-card">
+        <div class="section-head">
+          <div>
+            <h2>Live SKU Position</h2>
+            <p>There is <b>no box</b> and no <b>SKU:</b> prefix. Drag the SKU on the live preview or enter X/Y coordinates.</p>
+          </div>
+        </div>
+        <div class="position-controls">
+          <label>X Axis (PDF pt)<input id="skuX" type="number" min="0" step="1" value="300"></label>
+          <label>Y Axis (PDF pt)<input id="skuY" type="number" min="0" step="1" value="900"></label>
+          <label>Font Size<input id="skuFont" type="number" min="6" max="30" step="1" value="10"></label>
+          <button id="resetPositionBtn" class="button secondary" type="button">Reset Position</button>
+        </div>
+        <div class="coordinate-note" id="coordinateNote">X/Y are PDF coordinates measured from the top-left. Dragging the SKU updates these values live.</div>
+        <div id="livePreview" class="live-preview">
+          <img id="livePreviewImage" alt="Live Amazon shipping label preview">
+          <div id="liveSku" class="live-sku">K-shirt BL-CHK-L</div>
+        </div>
+      </section>
+
+      <div class="workspace">
+        <section class="card sku-card">
+          <div class="section-head">
+            <div><h2>SKU Sequence &amp; Matching</h2><p>Each shipping label is paired with its following Amazon invoice. The invoice product name is matched against your CSV.</p></div>
+          </div>
+          <div id="skuList"></div>
+          <label class="keep-pages"><input id="includeInvoices" type="checkbox" checked> Include original Amazon invoice after each shipping label</label>
+          <button id="generateBtn" class="button primary full">Apply Position &amp; Generate Final PDF</button>
+        </section>
+
+        <section class="card preview-card">
+          <div class="section-head"><div><h2>PDF Preview</h2><p>Preview of the generated PDF. When invoices are enabled, each invoice stays directly after its matching shipping label.</p></div></div>
+          <div id="previewGrid" class="preview-grid"></div>
+        </section>
+      </div>
+
+      <div id="readyBox" class="card ready hidden">
+        <div><span class="success">✓ PDF Ready</span><p>Your shipping labels are in sequence and the raw SKU text has been added without a box or “SKU:” prefix.</p></div>
+        <a id="downloadBtn" class="button primary" href="#">⬇ Download Ready PDF</a>
+      </div>
+    </section>
+
+    <section class="privacy"><strong>Privacy:</strong> Your uploaded PDF is processed temporarily and is not permanently stored. Customer label data is kept only in short-lived server memory.</section>
+    <div id="toast" class="toast hidden"></div>
+  </main>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>
