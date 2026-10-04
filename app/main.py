@@ -108,18 +108,53 @@ async def upload_csv(file_id: str, file: UploadFile = File(...)):
     data = await file.read()
     if len(data) > MAX_CSV_SIZE:
         raise HTTPException(413, "CSV is too large. Maximum supported size is 5 MB.")
-    try:
-        text = data.decode("utf-8-sig")
-        rows = list(csv.DictReader(io.StringIO(text)))
-    except Exception as exc:
-        raise HTTPException(400, "Could not read the CSV. Please save it as UTF-8 CSV.") from exc
-    if not rows:
-        raise HTTPException(400, "The CSV is empty.")
-    headers = {str(k).strip().lower(): k for k in (rows[0].keys() if rows else []) if k}
-    product_key = next((headers[k] for k in ("product_name", "product name", "name", "product") if k in headers), None)
-    sku_key = next((headers[k] for k in ("sku", "seller_sku", "seller sku", "merchant_sku", "merchant sku") if k in headers), None)
-    if not product_key or not sku_key:
-        raise HTTPException(400, "CSV must contain product_name and sku columns. Example: product_name,sku")
+    # Excel/Windows often exports CSV as UTF-8, UTF-8 with BOM, UTF-16,
+    # Windows-1252, or another legacy encoding. Try the common formats
+    # instead of forcing the seller to re-save the file manually.
+    encodings = ["utf-8-sig", "utf-8", "utf-16", "utf-16-le", "utf-16-be", "cp1252", "latin-1"]
+    rows = None
+    product_key = None
+    sku_key = None
+    last_error = None
+
+    for encoding in encodings:
+        try:
+            text = data.decode(encoding)
+            sample = text[:8192]
+            try:
+                dialect = csv.Sniffer().sniff(sample, delimiters=",;\t|\:")
+            except csv.Error:
+                dialect = csv.excel
+            parsed = list(csv.DictReader(io.StringIO(text), dialect=dialect))
+            if not parsed:
+                continue
+
+            parsed_headers = {
+                str(k).strip().lower().replace("\ufeff", ""): k
+                for k in parsed[0].keys() if k
+            }
+            pk = next((parsed_headers[k] for k in (
+                "product_name", "product name", "name", "product"
+            ) if k in parsed_headers), None)
+            sk = next((parsed_headers[k] for k in (
+                "sku", "seller_sku", "seller sku", "merchant_sku", "merchant sku"
+            ) if k in parsed_headers), None)
+
+            # Only accept the decoding if the expected columns were found.
+            # This prevents UTF-16/legacy decoding from silently producing
+            # unreadable headers.
+            if pk and sk:
+                rows = parsed
+                product_key = pk
+                sku_key = sk
+                break
+        except (UnicodeDecodeError, UnicodeError, csv.Error, ValueError) as exc:
+            last_error = exc
+            continue
+
+    if rows is None:
+        raise HTTPException(400, "Could not read the CSV. Please use columns Product Name and SKU, and save as CSV/CSV UTF-8 from Excel.") from last_error
+
     mapping = {}
     for row in rows:
         product = str(row.get(product_key, "") or "").strip()
