@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Login · Amazon SKU Label Printer</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    .login-wrap{max-width:460px;margin:10vh auto}.login-card{padding:28px}.login-card h1{margin-top:0}.login-card input{width:100%;box-sizing:border-box;padding:13px;border:1px solid #cbd5e1;border-radius:10px;margin:12px 0 16px;font:inherit}.login-error{color:#b91c1c;min-height:22px}
+  </style>
+</head>
+<body><main class="shell login-wrap"><section class="card login-card">
+  <div class="brand-mark">A</div><h1>Amazon SKU Label Printer</h1>
+  <p>Sign in to access your private label printer and saved SKU database.</p>
+  <form id="loginForm"><label for="password">Application password</label><input id="password" type="password" autocomplete="current-password" required placeholder="Enter your app password"><button class="button primary full" id="loginBtn" type="submit">Sign in</button><p class="login-error" id="loginError"></p></form>
+  <small>Set APP_ACCESS_PASSWORD and SESSION_SECRET in your hosting environment before signing in.</small>
+</section></main>
+<script>
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault(); const btn=document.getElementById('loginBtn'); const err=document.getElementById('loginError');
+  btn.disabled=true; btn.textContent='Signing in…'; err.textContent='';
+  try { const r=await fetch('/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:document.getElementById('password').value})}); const d=await r.json(); if(!r.ok) throw new Error(d.detail||'Login failed'); location.href='/'; }
+  catch(e){err.textContent=e.message;} finally {btn.disabled=false;btn.textContent='Sign in';}
+});
+</script></body></html>
